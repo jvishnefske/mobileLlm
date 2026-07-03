@@ -1,0 +1,22 @@
+{
+  "name": "mobilellm",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Local LLM agent PWA — runs a small language model entirely in your browser, offline-capable, installable on Android and iOS",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "icons": "node scripts/gen-icons.mjs"
+  },
+  "dependencies": {
+    "@wllama/wllama": "^2.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.0",
+    "sharp": "^0.33.5",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0"
+  }
+}
