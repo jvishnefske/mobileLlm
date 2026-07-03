@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+    />
+    <title>Pocket Agent — local LLM</title>
+    <meta
+      name="description"
+      content="A local LLM agent that runs entirely in your browser. Private, offline-capable, installable."
+    />
+    <meta name="theme-color" content="#0f1117" />
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+
+    <!-- iOS add-to-home-screen -->
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Pocket Agent" />
+    <script type="module" crossorigin src="/mobileLlm/assets/index-lDEGeQKR.js"></script>
+    <link rel="stylesheet" crossorigin href="/mobileLlm/assets/index-BQ9577P_.css">
+  </head>
+  <body>
+    <div id="app">
+      <header id="header">
+        <div class="header-title">
+          <span class="logo-dot"></span>
+          <h1>Pocket Agent</h1>
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" id="attach-btn" title="Import documents" aria-label="Import documents">📎</button>
+          <button class="icon-btn" id="share-btn" title="Share chat" aria-label="Share chat">📤</button>
+          <div class="header-status" id="status-pill">
+            <span id="status-text">no model</span>
+          </div>
+        </div>
+      </header>
+      <input
+        type="file"
+        id="file-input"
+        accept=".md,.markdown,.txt,text/plain,text/markdown"
+        multiple
+        hidden
+      />
+
+      <div id="install-banner" hidden>
+        <div id="install-content"></div>
+        <button id="install-dismiss" aria-label="Dismiss">✕</button>
+      </div>
+
+      <section id="model-panel">
+        <div class="model-row">
+          <select id="model-select" aria-label="Choose a model"></select>
+          <button id="load-btn" class="primary">Load</button>
+        </div>
+        <div class="model-row" id="custom-url-row" hidden>
+          <input
+            id="custom-url"
+            type="url"
+            placeholder="https://…/model.gguf (direct GGUF URL)"
+            inputmode="url"
+          />
+        </div>
+        <div id="progress-wrap" hidden>
+          <div id="progress-bar"><div id="progress-fill"></div></div>
+          <div id="progress-label"></div>
+        </div>
+        <p class="hint">
+          Models download once and are cached on-device — after that everything
+          runs offline. Nothing you type ever leaves this device.
+        </p>
+      </section>
+
+      <main id="chat"></main>
+
+      <footer id="composer">
+        <label id="tools-toggle-wrap" title="Let the model use device tools">
+          <input type="checkbox" id="tools-toggle" checked />
+          <span>🛠</span>
+        </label>
+        <textarea
+          id="input"
+          rows="1"
+          placeholder="Load a model to start…"
+          disabled
+          enterkeyhint="send"
+        ></textarea>
+        <button id="send-btn" class="primary" disabled aria-label="Send">➤</button>
+      </footer>
+    </div>
+  </body>
+</html>
