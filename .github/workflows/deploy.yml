@@ -2,7 +2,11 @@ name: Build and deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      # Temporary: deploy from the feature branch for pre-merge validation.
+      # Remove once merged to main.
+      - claude/local-llm-mobile-agent-vo7e9t
   workflow_dispatch:
 
 permissions:

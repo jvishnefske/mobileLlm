@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig, type Plugin } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -46,5 +47,13 @@ export default defineConfig({
   plugins: [serviceWorkerManifest()],
   build: {
     target: 'es2022',
+  },
+  test: {
+    include: ['tests/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      reporter: ['text', 'json-summary'],
+    },
   },
 });

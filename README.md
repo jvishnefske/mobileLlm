@@ -52,11 +52,28 @@ first run). The base path is derived from the repository name automatically.
 
 ```sh
 npm install
-npm run dev       # local dev server
-npm run build     # type-check + production build to dist/
-npm run preview   # serve the production build
-npm run icons     # regenerate PWA icons from the inline SVG (committed)
+npm run dev            # local dev server
+npm run build          # type-check + production build to dist/
+npm run preview        # serve the production build
+npm test               # unit tests (vitest)
+npm run test:coverage  # unit tests + coverage report
+npm run test:e2e       # Playwright e2e against the production build
+npm run icons          # regenerate PWA icons from the inline SVG (committed)
 ```
+
+## Testing
+
+- **Unit tests** (`tests/`) cover the agent loop with a scripted fake engine
+  (tool dispatch, grammar repair, delegate subagent, round limits), tool-call
+  parsing, the GBNF grammar, every tool (QuickJS sandbox isolation and
+  timeouts, memory and documents over fake-indexeddb, clipboard/TTS stubs),
+  and markdown sanitization.
+- **E2E tests** (`e2e/`) run the production build in Chromium and verify the
+  app shell, PWA manifest and icons, service-worker control, cross-origin
+  isolation (SharedArrayBuffer available), offline reload, and the iOS
+  install banner.
+- `.github/workflows/ci.yml` runs both suites plus the type-checked build on
+  every push and pull request, and writes a coverage table to the job summary.
 
 ## Architecture
 

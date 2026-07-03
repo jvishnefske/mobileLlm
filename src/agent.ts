@@ -39,7 +39,7 @@ function systemPrompt(toolsEnabled: boolean): string {
 
 // GBNF grammar forcing a valid call to a known tool — used to regenerate a
 // tool call the model botched in free-form output.
-function toolCallGrammar(): string {
+export function toolCallGrammar(): string {
   const names = ALL_TOOL_DEFS.map((t) => `"\\"${t.name}\\""`).join(' | ');
   return String.raw`
 root ::= "{" ws "\"name\"" ws ":" ws name ws "," ws "\"arguments\"" ws ":" ws object ws "}"
