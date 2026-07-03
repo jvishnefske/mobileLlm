@@ -14,8 +14,22 @@ installs to your home screen as an offline-capable app.
   Qwen2.5 0.5B, or any custom GGUF URL) directly in the browser. WASM works on
   both Android Chrome and iOS Safari — no WebGPU required.
 - **Agent tools** — the model can call device tools built on cross-platform web
-  APIs: current time, calculator, geolocation, and device/network info. Toggle
-  with the 🛠 button.
+  APIs (toggle with the 🛠 button):
+  - `run_javascript` — real code execution in a QuickJS-WASM **sandbox** (no
+    DOM, no network, 32 MB / 2 s limits) for math, dates, and logic
+  - `memory` — save/get/list/delete persistent notes in IndexedDB that
+    survive across chats
+  - `documents` — list/read/keyword-search markdown and text files the user
+    imports with the 📎 button
+  - `delegate` — spawn a focused subagent: a fresh conversation against the
+    same loaded model for self-contained subtasks
+  - `get_time`, `get_location`, `device_info`, `copy_to_clipboard`, `speak`
+    (text-to-speech)
+- **Robust tool calling** — if a small model emits malformed tool JSON, the
+  call is regenerated under a GBNF grammar constraint that forces valid JSON
+  with a known tool name.
+- **Markdown replies** — assistant output renders as sanitized markdown
+  (marked + DOMPurify); chats export via the Web Share API (📤) or download.
 - **Offline-first** — a service worker precaches the app shell, and models are
   cached on-device after the first download. Once installed, the whole app
   works in airplane mode.
@@ -48,11 +62,14 @@ npm run icons     # regenerate PWA icons from the inline SVG (committed)
 
 | Piece | File | Notes |
 | --- | --- | --- |
-| LLM engine | `src/llm.ts` | wllama wrapper, model list, download progress, offline cache |
-| Agent loop | `src/agent.ts` | prompt-based tool calling (`TOOL: {...}`), max 3 tool rounds |
-| Device tools | `src/tools.ts` | time, calculator, geolocation, device info |
+| LLM engine | `src/llm.ts` | wllama wrapper, model list, download progress, offline cache, GBNF grammar option |
+| Agent loop | `src/agent.ts` | prompt-based tool calling (`TOOL: {...}`), grammar repair, delegate subagent, max 3 tool rounds |
+| Device tools | `src/tools.ts` | sandboxed JS, memory, documents, time, geolocation, device info, clipboard, TTS |
+| JS sandbox | `src/sandbox.ts` | QuickJS-WASM with memory/time limits |
+| Storage | `src/db.ts` | IndexedDB stores for agent memory and imported documents |
+| Markdown | `src/markdown.ts` | marked + DOMPurify rendering of replies |
 | Install UX | `src/install.ts` | Android install prompt + iOS instructions |
-| UI | `src/main.ts`, `index.html`, `src/style.css` | vanilla TS, mobile-first |
+| UI | `src/main.ts`, `index.html`, `src/style.css` | vanilla TS, mobile-first, wake lock, share/export |
 | Offline + COI | `public/sw.js` | precache app shell, inject COOP/COEP headers |
 | SW manifest | `vite.config.ts` | build plugin injects the precache asset list into `sw.js` |
 | Deploy | `.github/workflows/deploy.yml` | build + deploy to GitHub Pages |

@@ -76,16 +76,20 @@ export class LlmEngine {
   async chat(
     messages: WllamaChatMessage[],
     onToken: TokenFn,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
+    opts?: { grammar?: string; nPredict?: number }
   ): Promise<string> {
     if (!this.wllama) throw new Error('No model loaded');
     return await this.wllama.createChatCompletion(messages, {
-      nPredict: 512,
+      nPredict: opts?.nPredict ?? 512,
       abortSignal,
       sampling: {
         temp: 0.4,
         top_p: 0.9,
         penalty_repeat: 1.15,
+        // GBNF grammar constrains sampling to syntactically valid output —
+        // used to repair malformed tool calls from small models.
+        grammar: opts?.grammar,
       },
       onNewToken: (_token, _piece, currentText) => onToken(currentText),
     });

@@ -78,6 +78,28 @@ body {
   letter-spacing: 0.2px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.icon-btn {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 5px 9px;
+  font-size: 15px;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.icon-btn:active {
+  background: var(--bg-input);
+}
+
 .header-status {
   font-size: 12px;
   color: var(--text-dim);
@@ -261,6 +283,74 @@ button.primary:disabled {
   border: 1px solid #5c2f38;
   color: var(--danger);
   font-size: 13px;
+}
+
+/* rendered markdown inside assistant bubbles (.md is added once the
+   streamed plain text is replaced by rendered HTML) */
+.msg.assistant.md {
+  white-space: normal;
+}
+
+.msg.assistant p,
+.msg.assistant ul,
+.msg.assistant ol,
+.msg.assistant pre,
+.msg.assistant blockquote,
+.msg.assistant table {
+  margin: 0 0 8px;
+}
+
+.msg.assistant > *:last-child {
+  margin-bottom: 0;
+}
+
+.msg.assistant ul,
+.msg.assistant ol {
+  padding-left: 22px;
+}
+
+.msg.assistant code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: var(--bg-input);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+.msg.assistant pre {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.msg.assistant pre code {
+  background: none;
+  padding: 0;
+}
+
+.msg.assistant blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+  color: var(--text-dim);
+}
+
+.msg.assistant table {
+  border-collapse: collapse;
+  display: block;
+  overflow-x: auto;
+}
+
+.msg.assistant th,
+.msg.assistant td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  font-size: 13.5px;
+}
+
+.msg.assistant a {
+  color: var(--accent);
 }
 
 .msg.thinking::after {

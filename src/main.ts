@@ -2,6 +2,8 @@ import './style.css';
 import { LlmEngine, MODELS } from './llm';
 import { Agent } from './agent';
 import { setupInstallBanner } from './install';
+import { renderMarkdown } from './markdown';
+import { documentStore } from './db';
 
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -82,6 +84,10 @@ async function loadModel(): Promise<void> {
           : `${fmtMB(loaded)} downloaded…`;
     });
     localStorage.setItem('model-url', url);
+    // Ask the browser not to evict our data under storage pressure —
+    // without this, iOS can silently delete the cached model after
+    // ~7 days of disuse.
+    void navigator.storage?.persist?.().catch(() => {});
     const name =
       MODELS.find((m) => m.url === url)?.name.split(' (')[0] ??
       url.split('/').pop() ??
@@ -97,7 +103,9 @@ async function loadModel(): Promise<void> {
       addMsg(
         'assistant',
         'Model loaded — I now run fully on this device, even in airplane mode. ' +
-          'With tools (🛠) on, I can check the time, do math, read device info, or get your location.'
+          'With tools (🛠) on, I can run code for math and logic, remember things ' +
+          'between chats, search documents you import (📎), check the time or your ' +
+          'location, copy to the clipboard, and read answers aloud.'
       );
     }
   } catch (err) {
@@ -136,6 +144,17 @@ function addMsg(
 
 let busy = false;
 
+// Keep the screen awake while the model is generating (iOS 16.4+, Android).
+async function withWakeLock<T>(fn: () => Promise<T>): Promise<T> {
+  let lock: WakeLockSentinel | null = null;
+  try {
+    lock = (await navigator.wakeLock?.request('screen').catch(() => null)) ?? null;
+    return await fn();
+  } finally {
+    void lock?.release().catch(() => {});
+  }
+}
+
 async function send(): Promise<void> {
   const text = input.value.trim();
   if (!text || busy || !engine.isLoaded) return;
@@ -150,7 +169,7 @@ async function send(): Promise<void> {
   const scrollPinned = () => (chat.scrollTop = chat.scrollHeight);
 
   try {
-    await agent.run(text, toolsToggle.checked, {
+    const reply = await withWakeLock(() => agent.run(text, toolsToggle.checked, {
       onToken: (current) => {
         // Hide the raw TOOL: line while it streams; the tool bubble shows it.
         bubble.textContent = current.startsWith('TOOL:') ? '…' : current;
@@ -171,7 +190,12 @@ async function send(): Promise<void> {
         bubble = addMsg('assistant', '');
         bubble.classList.add('thinking');
       },
-    });
+    }));
+    // Streaming shows plain text; render the finished reply as markdown.
+    if (reply && !reply.startsWith('TOOL:')) {
+      bubble.classList.add('md');
+      bubble.innerHTML = renderMarkdown(reply);
+    }
   } catch (err) {
     addMsg(
       'error',
@@ -196,6 +220,61 @@ input.addEventListener('keydown', (e) => {
 input.addEventListener('input', () => {
   input.style.height = 'auto';
   input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+});
+
+// ---------- documents ----------
+
+const attachBtn = $<HTMLButtonElement>('attach-btn');
+const fileInput = $<HTMLInputElement>('file-input');
+
+attachBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', async () => {
+  const files = Array.from(fileInput.files ?? []);
+  fileInput.value = '';
+  for (const file of files) {
+    try {
+      const content = await file.text();
+      await documentStore.save(file.name, content);
+      addMsg('tool', `📎 imported "${file.name}" (${content.length} chars) — ask me about it`);
+    } catch (err) {
+      addMsg('error', `Could not import ${file.name}: ${err instanceof Error ? err.message : err}`);
+    }
+  }
+});
+
+// ---------- share / export chat ----------
+
+const shareBtn = $<HTMLButtonElement>('share-btn');
+
+function chatAsMarkdown(): string {
+  const lines = agent.history
+    .filter((m) => m.role !== 'system')
+    .map((m) => `**${m.role === 'user' ? 'You' : 'Pocket Agent'}:**\n\n${m.content}`);
+  return `# Pocket Agent chat\n\n${lines.join('\n\n---\n\n')}\n`;
+}
+
+shareBtn.addEventListener('click', async () => {
+  if (agent.history.length === 0) return;
+  const markdown = chatAsMarkdown();
+  const file = new File([markdown], 'pocket-agent-chat.md', {
+    type: 'text/markdown',
+  });
+  try {
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Pocket Agent chat' });
+    } else if (navigator.share) {
+      await navigator.share({ title: 'Pocket Agent chat', text: markdown });
+    } else {
+      const url = URL.createObjectURL(new Blob([markdown], { type: 'text/markdown' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'pocket-agent-chat.md';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  } catch {
+    /* user cancelled the share sheet */
+  }
 });
 
 // ---------- offline / install ----------

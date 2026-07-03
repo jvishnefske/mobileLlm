@@ -31,10 +31,21 @@
           <span class="logo-dot"></span>
           <h1>Pocket Agent</h1>
         </div>
-        <div class="header-status" id="status-pill">
-          <span id="status-text">no model</span>
+        <div class="header-actions">
+          <button class="icon-btn" id="attach-btn" title="Import documents" aria-label="Import documents">📎</button>
+          <button class="icon-btn" id="share-btn" title="Share chat" aria-label="Share chat">📤</button>
+          <div class="header-status" id="status-pill">
+            <span id="status-text">no model</span>
+          </div>
         </div>
       </header>
+      <input
+        type="file"
+        id="file-input"
+        accept=".md,.markdown,.txt,text/plain,text/markdown"
+        multiple
+        hidden
+      />
 
       <div id="install-banner" hidden>
         <div id="install-content"></div>

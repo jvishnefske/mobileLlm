@@ -11,7 +11,11 @@
     "icons": "node scripts/gen-icons.mjs"
   },
   "dependencies": {
-    "@wllama/wllama": "^2.3.1"
+    "@jitl/quickjs-singlefile-browser-release-sync": "^0.32.0",
+    "@wllama/wllama": "^2.3.1",
+    "dompurify": "^3.4.11",
+    "marked": "^18.0.5",
+    "quickjs-emscripten-core": "^0.32.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.0",
