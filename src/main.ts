@@ -163,6 +163,7 @@ async function send(): Promise<void> {
   input.style.height = 'auto';
   sendBtn.disabled = true;
   addMsg('user', text);
+  shareBtn.disabled = false; // there is now a chat worth exporting
 
   let bubble = addMsg('assistant', '');
   bubble.classList.add('thinking');

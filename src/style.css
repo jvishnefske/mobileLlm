@@ -100,6 +100,22 @@ body {
   background: var(--bg-input);
 }
 
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.install-hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+#install-content button {
+  margin-top: 8px;
+  width: 100%;
+}
+
 .header-status {
   font-size: 12px;
   color: var(--text-dim);
@@ -138,15 +154,6 @@ body {
 
 #install-content {
   flex: 1;
-}
-
-#install-content .share-glyph {
-  display: inline-block;
-  transform: translateY(1px);
-}
-
-#install-content button {
-  margin-top: 6px;
 }
 
 #install-dismiss {
