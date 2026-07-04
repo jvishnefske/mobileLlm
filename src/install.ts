@@ -3,6 +3,8 @@
 //  - iOS/Safari: no API exists, so show precise Share → Add to Home Screen steps.
 // The banner hides itself when already installed or previously dismissed.
 
+import * as storage from './storage';
+
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -31,11 +33,11 @@ export function setupInstallBanner(): void {
   const content = document.getElementById('install-content')!;
   const dismiss = document.getElementById('install-dismiss')!;
 
-  if (isStandalone() || localStorage.getItem(DISMISS_KEY)) return;
+  if (isStandalone() || storage.getItem(DISMISS_KEY)) return;
 
   dismiss.addEventListener('click', () => {
     banner.hidden = true;
-    localStorage.setItem(DISMISS_KEY, '1');
+    storage.setItem(DISMISS_KEY, "1");
   });
 
   let deferredPrompt: BeforeInstallPromptEvent | null = null;
@@ -65,10 +67,31 @@ export function setupInstallBanner(): void {
   });
 
   if (isIos()) {
-    content.innerHTML =
-      '📱 Install for offline use: tap ' +
-      '<strong><span class="share-glyph">📤</span> Share</strong>' +
-      ' below, then <strong>“Add to Home Screen”</strong>.';
+    content.innerHTML = '';
+    const label = document.createElement('div');
+    label.textContent = '📱 Install this app for offline use:';
+    const btn = document.createElement('button');
+    btn.className = 'primary';
+    btn.textContent = 'Add to Home Screen';
+    const hint = document.createElement('div');
+    hint.className = 'install-hint';
+    hint.innerHTML = 'Opens the share menu — pick <strong>“Add to Home Screen”</strong>.';
+    btn.addEventListener('click', async () => {
+      // iOS has no install API, but the share sheet opened by
+      // navigator.share() contains the "Add to Home Screen" action.
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Pocket Agent', url: location.href });
+        } catch {
+          /* user closed the sheet */
+        }
+      } else {
+        hint.innerHTML =
+          'In Safari: tap <strong>Share</strong> (the square with an ↑ arrow ' +
+          'in the toolbar), then <strong>“Add to Home Screen”</strong>.';
+      }
+    });
+    content.append(label, btn, hint);
     banner.hidden = false;
   }
 }

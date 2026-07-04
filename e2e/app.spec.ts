@@ -67,11 +67,30 @@ test('iOS visitors get add-to-home-screen instructions', async ({ browser }) => 
   const page = await iosContext.newPage();
   await page.goto('/');
   await expect(page.locator('#install-banner')).toBeVisible();
-  await expect(page.locator('#install-content')).toContainText('Add to Home Screen');
+  // The banner offers a real, tappable button (not just instructions):
+  // it opens the share sheet via navigator.share, which on iOS contains
+  // the "Add to Home Screen" action.
+  const installBtn = page.locator('#install-content button');
+  await expect(installBtn).toBeVisible();
+  await expect(installBtn).toHaveText('Add to Home Screen');
+  await expect(installBtn).toBeEnabled();
+  // Without navigator.share (this headless browser), tapping falls back
+  // to explicit Safari instructions instead of doing nothing.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'share', { value: undefined });
+  });
+  await installBtn.click();
+  await expect(page.locator('#install-content')).toContainText('square with an ↑ arrow');
   // Dismissal is remembered.
   await page.locator('#install-dismiss').click();
   await expect(page.locator('#install-banner')).toBeHidden();
   await page.reload();
   await expect(page.locator('#install-banner')).toBeHidden();
   await iosContext.close();
+});
+
+test('header share button is disabled until a chat exists', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#share-btn')).toBeDisabled();
+  await expect(page.locator('#attach-btn')).toBeEnabled();
 });

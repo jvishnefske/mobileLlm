@@ -33,7 +33,7 @@
         </div>
         <div class="header-actions">
           <button class="icon-btn" id="attach-btn" title="Import documents" aria-label="Import documents">📎</button>
-          <button class="icon-btn" id="share-btn" title="Share chat" aria-label="Share chat">📤</button>
+          <button class="icon-btn" id="share-btn" title="Share chat" aria-label="Share chat" disabled>📤</button>
           <div class="header-status" id="status-pill">
             <span id="status-text">no model</span>
           </div>
@@ -73,6 +73,7 @@
           Models download once and are cached on-device — after that everything
           runs offline. Nothing you type ever leaves this device.
         </p>
+        <p class="hint" id="build-info"></p>
       </section>
 
       <main id="chat"></main>

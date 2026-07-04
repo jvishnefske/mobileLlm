@@ -1,7 +1,10 @@
 // Tiny IndexedDB wrapper backing the agent's persistent memory and the
 // imported document library. IndexedDB works identically on Android and iOS.
 
-const DB_NAME = 'pocket-agent';
+// Channel-suffixed: the dev channel (…/dev/) shares this origin, and its
+// schema may run ahead of stable's — they must not open the same database.
+const DB_NAME =
+  __CHANNEL__ === 'stable' ? 'pocket-agent' : `pocket-agent-${__CHANNEL__}`;
 const DB_VERSION = 1;
 
 export interface MemoryEntry {

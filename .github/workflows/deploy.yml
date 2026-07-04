@@ -1,12 +1,19 @@
 name: Build and deploy to GitHub Pages
 
+# Two release channels on one Pages site:
+#   main → /<repo>/        (stable)
+#   dev  → /<repo>/dev/    (dev channel — its own installable PWA)
+# Every deploy rebuilds BOTH channels from their branch heads (a Pages
+# deployment replaces the whole site), and each build must pass the
+# headless verification gate before anything ships.
+#
+# NOTE: for pushes to `dev` to deploy, the `github-pages` environment must
+# allow that branch: Settings → Environments → github-pages → Deployment
+# branches → add `dev`.
+
 on:
   push:
-    branches:
-      - main
-      # Temporary: deploy from the feature branch for pre-merge validation.
-      # Remove once merged to main.
-      - claude/local-llm-mobile-agent-vo7e9t
+    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
@@ -22,15 +29,34 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout stable (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: stable
+
+      - name: Check for dev branch
+        id: devcheck
+        working-directory: stable
+        run: |
+          if git ls-remote --exit-code origin refs/heads/dev >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout dev
+        if: steps.devcheck.outputs.exists == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          path: dev
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+          cache-dependency-path: stable/package-lock.json
 
       - name: Compute Pages base path
         # Project pages are served from /<repo>/ ; user/org pages from /.
@@ -42,8 +68,34 @@ jobs:
             echo "BASE_PATH=/${REPO_NAME}/" >> "$GITHUB_ENV"
           fi
 
-      - name: Build
-        run: npm run build
+      - name: Build and verify stable channel
+        working-directory: stable
+        env:
+          CHANNEL: stable
+        run: |
+          npm ci
+          npm run build
+          npm run verify
+
+      - name: Build and verify dev channel
+        if: steps.devcheck.outputs.exists == 'true'
+        working-directory: dev
+        env:
+          CHANNEL: dev
+          BASE_PATH: ${{ env.BASE_PATH }}dev/
+        run: |
+          npm ci
+          npm run build
+          npm run verify
+
+      - name: Assemble site (stable at /, dev under /dev/)
+        run: |
+          mkdir -p site
+          cp -r stable/dist/. site/
+          if [[ -d dev/dist ]]; then
+            mkdir -p site/dev
+            cp -r dev/dist/. site/dev/
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -53,7 +105,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: site
 
   deploy:
     needs: build
