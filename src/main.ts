@@ -298,6 +298,23 @@ shareBtn.addEventListener('click', async () => {
   }
 });
 
+// ---------- build info ----------
+
+{
+  const built = new Date(__BUILD_TIME__);
+  $('build-info').textContent =
+    `Build ${__BUILD_ID__} · ${built.toLocaleDateString()} ${built.toLocaleTimeString(
+      [],
+      { hour: '2-digit', minute: '2-digit' }
+    )}${__CHANNEL__ === 'stable' ? '' : ` · ${__CHANNEL__} channel`}`;
+  if (__CHANNEL__ !== 'stable') {
+    const badge = document.createElement('span');
+    badge.className = 'channel-badge';
+    badge.textContent = __CHANNEL__;
+    document.querySelector('.header-title')?.append(badge);
+  }
+}
+
 // ---------- offline / install ----------
 
 setupInstallBanner();

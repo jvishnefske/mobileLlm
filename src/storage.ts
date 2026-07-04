@@ -3,7 +3,10 @@
 // could collide with another app. Every key gets a "pocket-agent:" prefix,
 // and a schema version is stored so future format changes can migrate.
 
-const PREFIX = 'pocket-agent:';
+// The dev channel lives on the same origin (…/dev/), so its keys get their
+// own namespace — otherwise the two installed apps would fight over state.
+const PREFIX =
+  __CHANNEL__ === 'stable' ? 'pocket-agent:' : `pocket-agent:${__CHANNEL__}:`;
 const SCHEMA_VERSION = 1;
 
 export function getItem(key: string): string | null {
@@ -30,8 +33,9 @@ export function allKeys(): string[] {
 /** Runs pending migrations. Call once at startup, before any storage reads. */
 export function migrate(): void {
   const version = Number(getItem('schema-version') ?? 0);
-  if (version < 1) {
+  if (version < 1 && __CHANNEL__ === 'stable') {
     // v0 → v1: move the unprefixed keys shipped in the first release.
+    // Stable only — the dev channel must not steal the stable app's keys.
     for (const key of ['model-url', 'install-banner-dismissed']) {
       const old = localStorage.getItem(key);
       if (old !== null) {

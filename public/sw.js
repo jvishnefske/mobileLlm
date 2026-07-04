@@ -16,7 +16,11 @@
 const PRECACHE = self.__PRECACHE_MANIFEST;
 const BUILD_ID = self.__BUILD_ID;
 const BASE_URL = self.__BASE_URL;
-const CACHE_NAME = `pocket-agent-${BUILD_ID}`;
+// The base path is part of the cache name: the stable and dev channels are
+// separate service workers on the SAME origin, and each must only ever
+// clean up its own channel's caches.
+const CACHE_PREFIX = `pocket-agent:${BASE_URL}:`;
+const CACHE_NAME = CACHE_PREFIX + BUILD_ID;
 
 function withCoiHeaders(response) {
   if (response.status === 0) return response; // opaque
@@ -46,7 +50,7 @@ self.addEventListener('activate', (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((k) => k.startsWith('pocket-agent-') && k !== CACHE_NAME)
+            .filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME)
             .map((k) => caches.delete(k))
         )
       )

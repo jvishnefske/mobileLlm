@@ -6,7 +6,9 @@
 
 import { ModelManager } from '@wllama/wllama';
 
-declare const __BUILD_ID__: string;
+// Must mirror the naming scheme in public/sw.js.
+const CACHE_NAME = `pocket-agent:${import.meta.env.BASE_URL}:${__BUILD_ID__}`;
+
 
 export interface CheckResult {
   name: string;
@@ -57,9 +59,9 @@ export async function runChecks(): Promise<CheckResult[]> {
   let hasBuildCache = false;
   let precacheCount = 0;
   try {
-    hasBuildCache = await caches.has(`pocket-agent-${__BUILD_ID__}`);
+    hasBuildCache = await caches.has(CACHE_NAME);
     if (hasBuildCache) {
-      precacheCount = (await (await caches.open(`pocket-agent-${__BUILD_ID__}`)).keys()).length;
+      precacheCount = (await (await caches.open(CACHE_NAME)).keys()).length;
     }
   } catch {
     /* caches API unavailable */
@@ -68,7 +70,7 @@ export async function runChecks(): Promise<CheckResult[]> {
     'App shell cached for this build',
     hasBuildCache,
     hasBuildCache
-      ? `cache pocket-agent-${__BUILD_ID__} holds ${precacheCount} assets`
+      ? `cache ${CACHE_NAME} holds ${precacheCount} assets`
       : 'current build not yet cached (first visit, or SW still installing)'
   );
 
@@ -142,7 +144,7 @@ export async function buildReport(): Promise<string> {
   const icon = { pass: '✅', fail: '❌', info: 'ℹ️' } as const;
   return [
     `Pocket Agent diagnostics — ${new Date().toISOString()}`,
-    `build: ${__BUILD_ID__}`,
+    `build: ${__BUILD_ID__} (${__CHANNEL__}) — built ${__BUILD_TIME__}`,
     `url: ${location.href}`,
     `ua: ${navigator.userAgent}`,
     `screen: ${screen.width}x${screen.height} @${devicePixelRatio}x`,

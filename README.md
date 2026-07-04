@@ -42,11 +42,36 @@ installs to your home screen as an offline-capable app.
   page silently reloads once on first visit. Where isolation isn't available,
   wllama falls back to single-threaded automatically.
 
-## Deployment
+## Deployment — two release channels
 
-Every push to `main` triggers `.github/workflows/deploy.yml`, which builds the
-site with Vite and deploys it to GitHub Pages (the workflow enables Pages on
-first run). The base path is derived from the repository name automatically.
+`.github/workflows/deploy.yml` publishes **two channels of the same Pages
+site**, so all validation happens on a second URL before anything reaches
+the stable app:
+
+| Channel | Branch | URL | Purpose |
+| --- | --- | --- | --- |
+| stable | `main` | `/<repo>/` | what users install |
+| dev | `dev` | `/<repo>/dev/` | validate PWA updates first |
+
+Push to `dev` → the dev URL updates (after unit/e2e CI plus the headless
+verify gate). When it looks good on real phones, merge `dev` into `main` to
+promote the exact same code to stable. Each channel is its own service-worker
+scope, so the dev channel is a **separately installable PWA** (named "Pocket
+Agent (dev)" on the home screen) with its own namespaced localStorage,
+IndexedDB, and app-shell caches — the two installs never interfere, though
+they share the (immutable, URL-keyed) model cache so models aren't downloaded
+twice. Every deploy rebuilds both channels from their branch heads, and each
+build must pass verification before the deploy ships.
+
+One-time setup for the dev channel: allow the `dev` branch to deploy in
+**Settings → Environments → github-pages → Deployment branches** (the
+environment only permits `main` by default). The base path is derived from
+the repository name automatically, and the workflow enables Pages on first
+run.
+
+The UI shows the running build's id, build date/time, and channel at the
+bottom of the model panel (and in the diagnostics report); dev-channel builds
+also get an orange badge in the header.
 
 ## Development
 
