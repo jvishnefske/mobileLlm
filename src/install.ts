@@ -3,6 +3,8 @@
 //  - iOS/Safari: no API exists, so show precise Share → Add to Home Screen steps.
 // The banner hides itself when already installed or previously dismissed.
 
+import * as storage from './storage';
+
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -31,11 +33,11 @@ export function setupInstallBanner(): void {
   const content = document.getElementById('install-content')!;
   const dismiss = document.getElementById('install-dismiss')!;
 
-  if (isStandalone() || localStorage.getItem(DISMISS_KEY)) return;
+  if (isStandalone() || storage.getItem(DISMISS_KEY)) return;
 
   dismiss.addEventListener('click', () => {
     banner.hidden = true;
-    localStorage.setItem(DISMISS_KEY, '1');
+    storage.setItem(DISMISS_KEY, "1");
   });
 
   let deferredPrompt: BeforeInstallPromptEvent | null = null;

@@ -41,6 +41,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify build in headless Chrome
+        # Runs the same self-test suite the in-app diagnostics panel runs on
+        # a phone (service worker, offline cache, cross-origin isolation,
+        # IndexedDB), plus an offline-reload check. Blocks a broken deploy.
+        run: npm run verify
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:

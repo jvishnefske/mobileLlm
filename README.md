@@ -58,10 +58,11 @@ npm run preview        # serve the production build
 npm test               # unit tests (vitest)
 npm run test:coverage  # unit tests + coverage report
 npm run test:e2e       # Playwright e2e against the production build
+npm run verify         # headless self-tests against dist/ (CHROMIUM_PATH=… to pick a browser)
 npm run icons          # regenerate PWA icons from the inline SVG (committed)
 ```
 
-## Testing
+## Testing & verification
 
 - **Unit tests** (`tests/`) cover the agent loop with a scripted fake engine
   (tool dispatch, grammar repair, delegate subagent, round limits), tool-call
@@ -74,6 +75,47 @@ npm run icons          # regenerate PWA icons from the inline SVG (committed)
   install banner.
 - `.github/workflows/ci.yml` runs both suites plus the type-checked build on
   every push and pull request, and writes a coverage table to the job summary.
+
+Phones in the field have no debugger attached, so verification has two more
+legs beyond the test suites:
+
+1. **On-device diagnostics** — tap the *Pocket Agent* title in the header.
+   The app runs a self-test suite (service worker control, offline cache for
+   the current build, cross-origin isolation / thread count, storage
+   persistence and quota, IndexedDB round-trip, cached model inventory,
+   install state, tool API availability) and renders a plain-text report
+   with **Copy** and **Share** buttons. That report is the bug-report
+   format: ask a user to paste it and you know exactly what their device
+   supports and which build they're running.
+2. **Deploy gate** — `npm run verify` boots the built app in headless Chrome
+   at a phone-sized viewport, runs the *same* check suite via
+   `window.pocketAgent.runChecks()`, asserts the critical checks pass with
+   zero console errors, then severs the network and confirms the app shell
+   still renders. The deploy workflow runs it after every build; a failing
+   check blocks the deploy.
+
+For interactive debugging on real hardware: Android Chrome supports USB
+remote debugging via `chrome://inspect`, and iOS Safari via
+Settings → Safari → Advanced → Web Inspector plus a Mac.
+
+## Upgrades & data migration
+
+- **App code**: each build stamps a `BUILD_ID` into the service worker; on
+  the next launch after a deploy the new worker installs, precaches the new
+  assets, and deletes only old `pocket-agent-*` caches. If the app is open
+  when an update lands, a "New version ready — Reload" toast appears.
+- **Models**: cached by wllama independently of the app-shell caches, so
+  they survive every upgrade. After each successful model load the app
+  garbage-collects cached models that are no longer in the picker list
+  (and not the model in use), and requests `navigator.storage.persist()` so
+  the OS doesn't evict multi-hundred-MB downloads.
+- **Settings**: all localStorage keys are namespaced (`pocket-agent:`)
+  because the GitHub Pages origin is shared across all of a user's Pages
+  projects, and carry a schema version with startup migrations
+  (`src/storage.ts`).
+- **Escape hatch**: storage is per-origin, so moving to a custom domain
+  means starting fresh — an export/import feature should land together with
+  the first persistent-memory feature.
 
 ## Architecture
 
@@ -88,6 +130,9 @@ npm run icons          # regenerate PWA icons from the inline SVG (committed)
 | Install UX | `src/install.ts` | Android install prompt + iOS instructions |
 | UI | `src/main.ts`, `index.html`, `src/style.css` | vanilla TS, mobile-first, wake lock, share/export |
 | Offline + COI | `public/sw.js` | precache app shell, inject COOP/COEP headers |
+| Diagnostics | `src/diagnostics.ts` | on-device self-tests, copy/share report (tap the title) |
+| Storage | `src/storage.ts` | namespaced keys, schema migrations, persistence request |
+| Verifier | `scripts/verify.mjs` | headless CI gate running the same self-tests |
 | SW manifest | `vite.config.ts` | build plugin injects the precache asset list into `sw.js` |
 | Deploy | `.github/workflows/deploy.yml` | build + deploy to GitHub Pages |
 

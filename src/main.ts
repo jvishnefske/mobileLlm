@@ -4,6 +4,11 @@ import { Agent } from './agent';
 import { setupInstallBanner } from './install';
 import { renderMarkdown } from './markdown';
 import { documentStore } from './db';
+import { setupDiagnosticsPanel } from './diagnostics';
+import * as storage from './storage';
+import { ModelManager } from '@wllama/wllama';
+
+storage.migrate();
 
 const $ = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
@@ -39,7 +44,7 @@ customOpt.value = 'custom';
 customOpt.textContent = 'Custom GGUF URL…';
 modelSelect.append(customOpt);
 
-const savedUrl = localStorage.getItem('model-url');
+const savedUrl = storage.getItem('model-url');
 if (savedUrl) {
   if (MODELS.some((m) => m.url === savedUrl)) {
     modelSelect.value = savedUrl;
@@ -83,11 +88,11 @@ async function loadModel(): Promise<void> {
           ? `${fmtMB(loaded)} / ${fmtMB(total)} (${pct.toFixed(0)}%) — cached for offline use`
           : `${fmtMB(loaded)} downloaded…`;
     });
-    localStorage.setItem('model-url', url);
-    // Ask the browser not to evict our data under storage pressure —
-    // without this, iOS can silently delete the cached model after
-    // ~7 days of disuse.
-    void navigator.storage?.persist?.().catch(() => {});
+    storage.setItem('model-url', url);
+    // A model is now cached on-device: ask the OS not to evict it, and
+    // drop cached models that are neither in the picker nor the one in use.
+    void storage.requestPersistence();
+    void gcModelCache(url);
     const name =
       MODELS.find((m) => m.url === url)?.name.split(' (')[0] ??
       url.split('/').pop() ??
@@ -118,6 +123,21 @@ async function loadModel(): Promise<void> {
   } finally {
     loadBtn.disabled = false;
     modelSelect.disabled = false;
+  }
+}
+
+// Deletes cached models that are no longer reachable from the UI — not in
+// the current picker list and not the model in use. Keeps upgrades from
+// stranding hundreds of megabytes when the model list changes.
+async function gcModelCache(currentUrl: string): Promise<void> {
+  try {
+    const keep = new Set([...MODELS.map((m) => m.url), currentUrl]);
+    const models = await new ModelManager().getModels({ includeInvalid: true });
+    for (const model of models) {
+      if (!keep.has(model.url)) await model.remove();
+    }
+  } catch (err) {
+    console.warn('model cache GC failed', err);
   }
 }
 
@@ -281,6 +301,21 @@ shareBtn.addEventListener('click', async () => {
 // ---------- offline / install ----------
 
 setupInstallBanner();
+// Tapping the app title opens the self-test panel (see diagnostics.ts).
+setupDiagnosticsPanel(document.querySelector('.header-title')!);
+
+function showUpdateToast(): void {
+  if (document.getElementById('update-toast')) return;
+  const toast = document.createElement('div');
+  toast.id = 'update-toast';
+  toast.innerHTML = '<span>New version ready</span>';
+  const btn = document.createElement('button');
+  btn.className = 'primary';
+  btn.textContent = 'Reload';
+  btn.addEventListener('click', () => location.reload());
+  toast.append(btn);
+  document.body.append(toast);
+}
 
 window.addEventListener('online', () => setStatus(statusText.textContent ?? '', engine.isLoaded));
 window.addEventListener('offline', () => {
@@ -290,7 +325,18 @@ window.addEventListener('offline', () => {
 if ('serviceWorker' in navigator && !import.meta.env.DEV) {
   navigator.serviceWorker
     .register(import.meta.env.BASE_URL + 'sw.js')
-    .then(() => {
+    .then((reg) => {
+      // A new build deployed while this page is open: the fresh SW installs
+      // in the background; offer a one-tap reload instead of waiting for
+      // the user's next launch.
+      reg.addEventListener('updatefound', () => {
+        const fresh = reg.installing;
+        fresh?.addEventListener('statechange', () => {
+          if (fresh.state === 'installed' && navigator.serviceWorker.controller) {
+            showUpdateToast();
+          }
+        });
+      });
       // The SW injects COOP/COEP headers (GitHub Pages can't send them),
       // which unlocks SharedArrayBuffer → multi-threaded inference. That
       // only takes effect on a document the SW controlled from the start,

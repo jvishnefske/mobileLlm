@@ -3,6 +3,11 @@ import { defineConfig, type Plugin } from 'vite';
 import fs from 'node:fs';
 import path from 'node:path';
 
+// One build id shared by the app bundle (via define) and the service worker
+// (via placeholder replacement) so diagnostics can verify the SW cache
+// matches the running app version.
+const buildId = Date.now().toString(36);
+
 // Injects the final list of built assets into the service worker so it can
 // precache the full app shell, and stamps a unique cache version per build.
 function serviceWorkerManifest(): Plugin {
@@ -33,7 +38,7 @@ function serviceWorkerManifest(): Plugin {
       let sw = fs.readFileSync(swPath, 'utf8');
       sw = sw
         .replace('self.__PRECACHE_MANIFEST', JSON.stringify(precache))
-        .replace('self.__BUILD_ID', JSON.stringify(Date.now().toString(36)))
+        .replace('self.__BUILD_ID', JSON.stringify(buildId))
         .replace('self.__BASE_URL', JSON.stringify(base));
       fs.writeFileSync(swPath, sw);
     },
@@ -44,6 +49,9 @@ export default defineConfig({
   // On GitHub Pages the app is served from /<repo-name>/ — the deploy
   // workflow sets BASE_PATH accordingly. Local dev uses '/'.
   base: process.env.BASE_PATH || '/',
+  define: {
+    __BUILD_ID__: JSON.stringify(buildId),
+  },
   plugins: [serviceWorkerManifest()],
   build: {
     target: 'es2022',
