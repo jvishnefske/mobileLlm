@@ -19,7 +19,7 @@ function isStandalone(): boolean {
   );
 }
 
-function isIos(): boolean {
+export function isIos(): boolean {
   const ua = navigator.userAgent;
   // iPadOS 13+ reports as Mac, but has touch.
   return (
