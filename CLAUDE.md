@@ -75,6 +75,13 @@ and ships one Pages artifact. Promotion = merge `dev` into `main`.
 - **Storage schema changes** need a migration in `storage.ts` `migrate()`
   (bump `SCHEMA_VERSION`, stack `if (version < N)` blocks) or an IndexedDB
   version bump in `db.ts`.
+- **iOS cannot run multi-threaded inference** even though the COI trick
+  makes `crossOriginIsolated` true there: the multi-thread llama.cpp build
+  reserves a large SHARED WebAssembly.Memory upfront and iOS Safari refuses
+  it ("Cannot allocate WebAssembly.Memory"). `loadAttempts()` in
+  `src/llm.ts` therefore starts single-threaded on iOS and degrades on any
+  memory error (multi → single → smaller context). Don't "simplify" the
+  ladder away.
 - The COOP/COEP trick requires a one-time silent reload on first visit
   (see SW registration in main.ts); `verify` and e2e both depend on
   `crossOriginIsolated` ending up true.

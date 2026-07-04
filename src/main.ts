@@ -80,14 +80,23 @@ async function loadModel(): Promise<void> {
   progressWrap.hidden = false;
   setStatus('downloading…');
   try {
-    await engine.load(url, (loaded, total) => {
-      const pct = total > 0 ? (loaded / total) * 100 : 0;
-      progressFill.style.width = pct.toFixed(1) + '%';
-      progressLabel.textContent =
-        total > 0
-          ? `${fmtMB(loaded)} / ${fmtMB(total)} (${pct.toFixed(0)}%) — cached for offline use`
-          : `${fmtMB(loaded)} downloaded…`;
-    });
+    await engine.load(
+      url,
+      (loaded, total) => {
+        const pct = total > 0 ? (loaded / total) * 100 : 0;
+        progressFill.style.width = pct.toFixed(1) + '%';
+        progressLabel.textContent =
+          total > 0
+            ? `${fmtMB(loaded)} / ${fmtMB(total)} (${pct.toFixed(0)}%) — cached for offline use`
+            : `${fmtMB(loaded)} downloaded…`;
+      },
+      (mode) => {
+        // A memory-constrained device rejected the previous attempt;
+        // the engine is retrying with a lighter configuration.
+        setStatus(`retrying: ${mode}…`);
+        progressLabel.textContent = `Device is low on memory — retrying ${mode}`;
+      }
+    );
     storage.setItem('model-url', url);
     // A model is now cached on-device: ask the OS not to evict it, and
     // drop cached models that are neither in the picker nor the one in use.
