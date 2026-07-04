@@ -67,6 +67,11 @@ self.addEventListener('fetch', (event) => {
   // Leave cross-origin requests (model downloads etc.) alone.
   if (url.origin !== self.location.origin) return;
 
+  // The stable worker's scope also covers the dev channel's subpath
+  // (…/dev/ is inside …/), but that page is a different app with its own
+  // service worker — never serve it our app shell or our cached assets.
+  if (url.pathname.startsWith(BASE_URL + 'dev/')) return;
+
   if (request.mode === 'navigate') {
     // App shell: cached index first so the installed app opens instantly
     // and offline; fall back to the network for anything uncached.
