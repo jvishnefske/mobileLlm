@@ -82,6 +82,10 @@ and ships one Pages artifact. Promotion = merge `dev` into `main`.
   `src/llm.ts` therefore starts single-threaded on iOS and degrades on any
   memory error (multi → single → smaller context). Don't "simplify" the
   ladder away.
+- The stable service worker's scope also covers `/dev/` — its fetch
+  handler must keep ignoring `BASE_URL + 'dev/'` requests or the stable
+  app shell hijacks the dev channel's URL (and vice-versa data poisoning
+  of the asset cache).
 - The COOP/COEP trick requires a one-time silent reload on first visit
   (see SW registration in main.ts); `verify` and e2e both depend on
   `crossOriginIsolated` ending up true.
