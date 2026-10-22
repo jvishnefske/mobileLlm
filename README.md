@@ -79,6 +79,7 @@ also get an orange badge in the header.
 npm install
 npm run dev            # local dev server
 npm run build          # type-check + production build to dist/
+npm run lint           # ESLint (typescript-eslint recommended)
 npm run preview        # serve the production build
 npm test               # unit tests (vitest)
 npm run test:coverage  # unit tests + coverage report
