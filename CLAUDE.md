@@ -11,6 +11,7 @@ framework.
 ```sh
 npm run dev            # dev server (service worker disabled in dev)
 npm run build          # tsc --noEmit + vite build → dist/
+npm run lint           # ESLint (eslint.config.js: js + typescript-eslint recommended)
 npm test               # vitest unit tests (jsdom + fake-indexeddb)
 npm run test:e2e       # Playwright e2e vs production build (port 4317)
 npm run verify         # headless self-test gate vs dist/ (port 8899)
